@@ -1,0 +1,43 @@
+{
+  "name": "milkd-backend",
+  "version": "1.0.0",
+  "description": "Backend API for Milkd application",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.787.0",
+    "@aws-sdk/credential-providers": "^3.787.0",
+    "@aws-sdk/s3-request-presigner": "^3.787.0",
+    "@prisma/client": "^5.0.0",
+    "axios": "^1.12.2",
+    "bcrypt": "^5.1.1",
+    "compression": "^1.8.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-validator": "^7.2.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.10.1",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.2",
+    "prisma": "^5.0.0",
+    "sib-api-v3-sdk": "^8.5.0",
+    "stripe": "^14.0.0",
+    "nodemailer": "^6.9.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "express",
+    "api",
+    "milkd"
+  ],
+  "author": "Your Name",
+  "license": "ISC"
+}
