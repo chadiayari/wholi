@@ -22,6 +22,7 @@ const instagramRouter = require("./routes/instagram");
 const stripeRouter = require("./routes/stripe");
 const ordersRouter = require("./routes/orders");
 const paymentsRouter = require("./routes/payments");
+const adminRouter = require("./routes/admin");
 dotenv.config();
 const app = express();
 app.use(cors());
@@ -40,6 +41,7 @@ app.use("/api/contact", contactRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/instagram", instagramRouter);
 app.use("/api/payments", paymentsRouter);
+app.use("/api/admin", adminRouter);
 // Static assets
 app.use(
   express.static(path.join(__dirname, "public", "build"), {

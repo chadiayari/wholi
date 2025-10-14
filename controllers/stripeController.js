@@ -78,10 +78,6 @@ const createCheckoutSession = async (req, res) => {
         `${process.env.FRONTEND_URL}/confirmation?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancel_url || `${process.env.FRONTEND_URL}/commande`,
       customer_email: customer.email,
-      billing_address_collection: "required",
-      shipping_address_collection: {
-        allowed_countries: ["FR", "TN"], // France and Tunisia
-      },
       metadata: {
         customerName: customer.name,
         customerEmail: customer.email,
@@ -153,11 +149,7 @@ const handleWebhook = async (req, res) => {
 
   try {
     // For testing without proper webhook secret, skip verification
-    if (
-      process.env.STRIPE_WEBHOOK_SECRET &&
-      process.env.STRIPE_WEBHOOK_SECRET !==
-        "whsec_your_webhook_signing_secret_here"
-    ) {
+    if (process.env.STRIPE_WEBHOOK_SECRET) {
       event = stripe.webhooks.constructEvent(
         req.body,
         sig,
