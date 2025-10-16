@@ -43,9 +43,5 @@
   "orientation": "portrait-primary",
   "scope": "/",
   "lang": "fr-FR",
-  "categories": [
-    "food",
-    "lifestyle",
-    "health"
-  ]
+  "categories": ["food", "lifestyle", "health"]
 }
