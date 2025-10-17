@@ -2,6 +2,10 @@ const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const nodemailer = require("nodemailer");
 const Order = require("../Models/order.Model");
 const Payment = require("../Models/payment.Model");
+const {
+  sendNewOrderNotificationToAdmin,
+  sendOrderConfirmationEmail,
+} = require("./emailController");
 
 // Create checkout session
 const createCheckoutSession = async (req, res) => {
@@ -148,7 +152,6 @@ const handleWebhook = async (req, res) => {
   let event;
 
   try {
-    // For testing without proper webhook secret, skip verification
     if (process.env.STRIPE_WEBHOOK_SECRET) {
       event = stripe.webhooks.constructEvent(
         req.body,
@@ -169,25 +172,51 @@ const handleWebhook = async (req, res) => {
   switch (event.type) {
     case "checkout.session.completed":
       const session = event.data.object;
-      console.log("Payment succeeded for session:", session.id);
+      console.log("💳 Payment succeeded for session:", session.id);
+      console.log("Session metadata:", session.metadata);
+      console.log("Session amount_total:", session.amount_total);
 
-      // Update payment status to succeeded
-      await updatePaymentStatus(session.id, "succeeded", {
-        stripeStatus: session.payment_status,
-        paymentIntentId: session.payment_intent,
-        amountReceived: session.amount_total,
-      });
-
-      // Save order to database and link to payment
-      const savedOrder = await saveOrderToDatabase(session);
-      if (savedOrder) {
+      try {
+        // Update payment status to succeeded
         await updatePaymentStatus(session.id, "succeeded", {
-          orderId: savedOrder._id,
+          stripeStatus: session.payment_status,
+          paymentIntentId: session.payment_intent,
+          amountReceived: session.amount_total,
         });
-      }
 
-      // Send confirmation email
-      // await sendOrderConfirmationEmail(session);
+        // Save order to database and link to payment
+        console.log("🛒 Attempting to save order to database...");
+        const savedOrder = await saveOrderToDatabase(session);
+        if (savedOrder) {
+          console.log("✅ Order saved successfully:", savedOrder._id);
+          await updatePaymentStatus(session.id, "succeeded", {
+            orderId: savedOrder._id,
+          });
+
+          // Send new order notification to admin
+          try {
+            await sendNewOrderNotificationToAdmin(savedOrder);
+            console.log("📧 New order notification sent to admin");
+          } catch (emailError) {
+            console.error("❌ Failed to send admin notification:", emailError);
+          }
+
+          // Send order confirmation to customer
+          try {
+            await sendOrderConfirmationEmail(savedOrder);
+            console.log("📧 Order confirmation sent to customer");
+          } catch (emailError) {
+            console.error(
+              "❌ Failed to send customer confirmation:",
+              emailError
+            );
+          }
+        } else {
+          console.error("❌ Failed to save order to database");
+        }
+      } catch (error) {
+        console.error("❌ Error processing checkout.session.completed:", error);
+      }
 
       break;
 
@@ -388,46 +417,6 @@ const saveOrderToDatabase = async (session) => {
   } catch (error) {
     console.error("Error saving order to database:", error);
     return null;
-  }
-};
-
-// Send order confirmation email
-const sendOrderConfirmationEmail = async (session) => {
-  try {
-    // Configure nodemailer (adjust based on your email provider)
-    const transporter = nodemailer.createTransporter({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
-
-    const customerName = session.metadata.customerName;
-    const customerEmail = session.customer_email;
-    const orderTotal = (session.amount_total / 100).toFixed(2);
-
-    const mailOptions = {
-      from: process.env.FROM_EMAIL,
-      to: customerEmail,
-      subject: "Confirmation de votre commande Milkd",
-      html: `
-        <h2>Merci pour votre commande !</h2>
-        <p>Bonjour ${customerName},</p>
-        <p>Nous avons bien reçu votre commande d'un montant de ${orderTotal}€.</p>
-        <p>Votre commande sera préparée dans les plus brefs délais.</p>
-        <p>Numéro de commande: ${session.id}</p>
-        <p>Merci de votre confiance !</p>
-        <p>L'équipe Milkd</p>
-      `,
-    };
-
-    await transporter.sendMail(mailOptions);
-    console.log("Confirmation email sent to:", customerEmail);
-  } catch (error) {
-    console.error("Error sending confirmation email:", error);
   }
 };
 

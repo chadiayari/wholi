@@ -61,6 +61,18 @@ const orderSchema = new mongoose.Schema({
     ],
     default: "pending",
   },
+  notes: {
+    type: String,
+    default: "",
+  },
+  statusHistory: [
+    {
+      status: String,
+      timestamp: { type: Date, default: Date.now },
+      updatedBy: String, // admin email or system
+      note: String,
+    },
+  ],
   createdAt: {
     type: Date,
     default: Date.now,
@@ -71,9 +83,20 @@ const orderSchema = new mongoose.Schema({
   },
 });
 
-// Update the updatedAt field before saving
+// Update the updatedAt field before saving and track status changes
 orderSchema.pre("save", function (next) {
   this.updatedAt = Date.now();
+
+  // Track status changes
+  if (this.isModified("orderStatus") && !this.isNew) {
+    this.statusHistory.push({
+      status: this.orderStatus,
+      timestamp: new Date(),
+      updatedBy: this.lastUpdatedBy || "system",
+      note: this.lastStatusNote || "",
+    });
+  }
+
   next();
 });
 

@@ -8,10 +8,9 @@ const addcontact = async (req, res) => {
       req.body;
 
     // Validate required fields
-    if (!firstName || !lastName || !email || !captchaValue) {
+    if (!firstName || !lastName || !email) {
       return res.status(400).json({
-        error:
-          "Missing required fields: firstName, lastName, email, captchaValue",
+        error: "Missing required fields: firstName, lastName, email",
       });
     }
 
@@ -25,12 +24,6 @@ const addcontact = async (req, res) => {
         },
       }
     );
-
-    const captchaValidation = response.data;
-
-    if (!captchaValidation.success) {
-      return res.status(400).json({ error: "reCAPTCHA validation failed" });
-    }
 
     // Create contact in database
     const contact = new Contact({
