@@ -14,17 +14,6 @@ const addcontact = async (req, res) => {
       });
     }
 
-    // Verify reCAPTCHA
-    const response = await axios.post(
-      `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${captchaValue}`,
-      {},
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded; charset=utf-8",
-        },
-      }
-    );
-
     // Create contact in database
     const contact = new Contact({
       firstName,
