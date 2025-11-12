@@ -72,15 +72,29 @@ const createCheckoutSession = async (req, res) => {
       });
     }
 
+    // Validate URLs before creating session
+    const frontendUrl = process.env.FRONTEND_URL || "https://wholi-production.up.railway.app";
+    
+    if (!frontendUrl || (!frontendUrl.startsWith("http://") && !frontendUrl.startsWith("https://"))) {
+      console.error("Invalid FRONTEND_URL:", frontendUrl);
+      return res.status(500).json({
+        error: "Server configuration error",
+        details: "FRONTEND_URL environment variable is not properly configured",
+      });
+    }
+
+    const finalSuccessUrl = success_url || `${frontendUrl}/confirmation?session_id={CHECKOUT_SESSION_ID}`;
+    const finalCancelUrl = cancel_url || `${frontendUrl}/commande`;
+
+    console.log("Using URLs:", { finalSuccessUrl, finalCancelUrl });
+
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: lineItems,
       mode: "payment",
-      success_url:
-        success_url ||
-        `${process.env.FRONTEND_URL}/confirmation?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: cancel_url || `${process.env.FRONTEND_URL}/commande`,
+      success_url: finalSuccessUrl,
+      cancel_url: finalCancelUrl,
       customer_email: customer.email,
       metadata: {
         customerName: customer.name,
