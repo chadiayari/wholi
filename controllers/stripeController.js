@@ -38,18 +38,33 @@ const createCheckoutSession = async (req, res) => {
     }
 
     // Create line items for Stripe
-    const lineItems = items.map((item) => ({
-      price_data: {
-        currency: "eur",
-        product_data: {
-          name: item.name,
-          // description: item.description || "",
-          images: item.image ? [item.image] : [],
+    const lineItems = items.map((item) => {
+      // Validate image URL - Stripe only accepts fully qualified HTTPS URLs
+      const validImageUrl =
+        item.image &&
+        (item.image.startsWith("https://") || item.image.startsWith("http://"))
+          ? item.image
+          : null;
+
+      const productData = {
+        name: item.name,
+        // description: item.description || "",
+      };
+
+      // Only add images if we have a valid URL
+      if (validImageUrl) {
+        productData.images = [validImageUrl];
+      }
+
+      return {
+        price_data: {
+          currency: "eur",
+          product_data: productData,
+          unit_amount: Math.round(item.price * 100), // Convert to cents
         },
-        unit_amount: Math.round(item.price * 100), // Convert to cents
-      },
-      quantity: item.quantity,
-    }));
+        quantity: item.quantity,
+      };
+    });
 
     // Calculate delivery fee based on delivery method
     const deliveryFee = delivery_method === "domicile" ? 5.0 : 0; // Example: 5€ for home delivery
