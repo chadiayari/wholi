@@ -73,9 +73,14 @@ const createCheckoutSession = async (req, res) => {
     }
 
     // Validate URLs before creating session
-    const frontendUrl = process.env.FRONTEND_URL || "https://wholi-production.up.railway.app";
-    
-    if (!frontendUrl || (!frontendUrl.startsWith("http://") && !frontendUrl.startsWith("https://"))) {
+    const frontendUrl =
+      process.env.FRONTEND_URL || "https://wholi-production.up.railway.app";
+
+    if (
+      !frontendUrl ||
+      (!frontendUrl.startsWith("http://") &&
+        !frontendUrl.startsWith("https://"))
+    ) {
       console.error("Invalid FRONTEND_URL:", frontendUrl);
       return res.status(500).json({
         error: "Server configuration error",
@@ -83,7 +88,9 @@ const createCheckoutSession = async (req, res) => {
       });
     }
 
-    const finalSuccessUrl = success_url || `${frontendUrl}/confirmation?session_id={CHECKOUT_SESSION_ID}`;
+    const finalSuccessUrl =
+      success_url ||
+      `${frontendUrl}/confirmation?session_id={CHECKOUT_SESSION_ID}`;
     const finalCancelUrl = cancel_url || `${frontendUrl}/commande`;
 
     console.log("Using URLs:", { finalSuccessUrl, finalCancelUrl });
