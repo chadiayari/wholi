@@ -103,9 +103,12 @@ const sendNewOrderNotificationToAdmin = async (order) => {
         to: [
           {
             email: process.env.ADMIN_EMAIL,
-            name: "Admin Milkd",
           },
         ],
+        sender: {
+          name: "WHOLI",
+          email: "contact@codini.tn",
+        },
         subject: `Nouvelle commande Milkd - ${order.stripeSessionId}`,
         htmlContent: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -211,9 +214,12 @@ const sendOrderConfirmationEmail = async (order) => {
         to: [
           {
             email: order.customerInfo.email,
-            name: order.customerInfo.name,
           },
         ],
+        sender: {
+          name: "WHOLI",
+          email: "contact@codini.tn",
+        },
         subject: `Milkd - Confirmation de votre commande`,
         htmlContent: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
