@@ -32,10 +32,10 @@ const sendOrderStatusEmail = async (order, previousStatus, newStatus) => {
       },
     ],
     sender: {
-      name: "Milkd",
+      name: "Wholi",
       email: "contact@codini.tn",
     },
-    subject: `Milkd - ${
+    subject: `Wholi - ${
       statusSubjects[newStatus] || "Mise à jour de commande"
     }`,
     htmlContent: `
@@ -66,7 +66,7 @@ const sendOrderStatusEmail = async (order, previousStatus, newStatus) => {
         }
 
         <p>Merci de votre confiance !</p>
-        <p>L'équipe Milkd</p>
+        <p>L'équipe Wholi</p>
       </div>
     `,
   };
@@ -113,7 +113,7 @@ const sendNewOrderNotificationToAdmin = async (order) => {
       name: "WHOLI",
       email: "contact@codini.tn",
     },
-    subject: `Nouvelle commande Milkd - ${order.stripeSessionId}`,
+    subject: `Nouvelle commande Wholi - ${order.stripeSessionId}`,
     htmlContent: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #2563eb;">Nouvelle commande reçue</h2>
@@ -169,9 +169,7 @@ const sendNewOrderNotificationToAdmin = async (order) => {
 
         <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <h3 style="margin-top: 0;">Détails de la commande</h3>
-          <p><strong>ID de session Stripe:</strong> ${
-            order.stripeSessionId
-          }</p>
+          <p><strong>ID de session Stripe:</strong> ${order.stripeSessionId}</p>
           <p><strong>Statut de paiement:</strong> ${order.paymentStatus}</p>
           <p><strong>Statut de commande:</strong> ${order.orderStatus}</p>
           <p><strong>Date de commande:</strong> ${new Date(
@@ -224,7 +222,7 @@ const sendOrderConfirmationEmail = async (order) => {
       name: "WHOLI",
       email: "contact@codini.tn",
     },
-    subject: `Milkd - Confirmation de votre commande`,
+    subject: `Wholi - Confirmation de votre commande`,
     htmlContent: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #2563eb;">Merci pour votre commande !</h2>
@@ -233,9 +231,7 @@ const sendOrderConfirmationEmail = async (order) => {
         
         <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <h3 style="margin-top: 0;">Détails de votre commande</h3>
-          <p><strong>Numéro de commande:</strong> ${
-            order.stripeSessionId
-          }</p>
+          <p><strong>Numéro de commande:</strong> ${order.stripeSessionId}</p>
           <p><strong>Date de commande:</strong> ${new Date(
             order.createdAt
           ).toLocaleDateString("fr-FR")}</p>
@@ -284,7 +280,7 @@ const sendOrderConfirmationEmail = async (order) => {
 
         <p>Vous recevrez un email de suivi avec les informations de livraison dès que votre commande sera expédiée.</p>
         <p>Merci de votre confiance !</p>
-        <p>L'équipe Milkd</p>
+        <p>L'équipe Wholi</p>
       </div>
     `,
   };
