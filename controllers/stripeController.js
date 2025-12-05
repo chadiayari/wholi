@@ -4,7 +4,7 @@ const Order = require("../Models/order.Model");
 const Payment = require("../Models/payment.Model");
 const {
   sendNewOrderNotificationToAdmin,
-  sendOrderConfirmationEmail,
+  sendOrderConfirmedEmail,
 } = require("./emailController");
 
 // Create checkout session
@@ -237,10 +237,10 @@ const handleWebhook = async (req, res) => {
             console.error("❌ Failed to send admin notification:", emailError);
           }
 
-          // Send order confirmation to customer
+          // Send order confirmation to customer using Brevo template 23
           try {
-            await sendOrderConfirmationEmail(savedOrder);
-            console.log("📧 Order confirmation sent to customer");
+            await sendOrderConfirmedEmail(savedOrder);
+            console.log("📧 Order confirmation (template 23) sent to customer");
           } catch (emailError) {
             console.error(
               "❌ Failed to send customer confirmation:",

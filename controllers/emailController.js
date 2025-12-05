@@ -6,23 +6,24 @@ apiKey.apiKey = process.env.BREVO_API_KEY;
 
 const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
 
-// Send order status change email to customer
-const sendOrderStatusEmail = async (order, previousStatus, newStatus) => {
-  const statusMessages = {
-    confirmed: "Votre commande a été confirmée et est en cours de traitement.",
-    preparing: "Votre commande est en cours de préparation.",
-    shipped: "Votre commande a été expédiée et est en route vers vous.",
-    delivered: "Votre commande a été livrée avec succès.",
-    cancelled: "Votre commande a été annulée.",
-  };
+// Brevo Template IDs for order status emails
+const ORDER_TEMPLATES = {
+  confirmed: 23, // Commande confirmée - sent when order is created
+  preparing: 24, // Commande en préparation
+  shipped: 25, // Commande en cours de livraison
+};
 
-  const statusSubjects = {
-    confirmed: "Commande confirmée",
-    preparing: "Commande en préparation",
-    shipped: "Commande expédiée",
-    delivered: "Commande livrée",
-    cancelled: "Commande annulée",
-  };
+// Valid order statuses that admin can set (in order)
+const VALID_ORDER_STATUSES = ["confirmed", "preparing", "shipped"];
+
+// Send order status email using Brevo templates
+const sendOrderStatusEmail = async (order, previousStatus, newStatus) => {
+  const templateId = ORDER_TEMPLATES[newStatus];
+
+  if (!templateId) {
+    console.log(`ℹ️ No template configured for status: ${newStatus}`);
+    return { success: false, error: "No template for this status" };
+  }
 
   const sendSmtpEmail = {
     to: [
@@ -31,49 +32,25 @@ const sendOrderStatusEmail = async (order, previousStatus, newStatus) => {
         name: order.customerInfo.name,
       },
     ],
-    sender: {
-      name: "Wholi",
-      email: "contact@codini.tn",
+    templateId: templateId,
+    params: {
+      CUSTOMER_NAME: order.customerInfo.name,
+      ORDER_ID: order.stripeSessionId,
+      ORDER_TOTAL: order.pricing.total.toFixed(2),
+      DELIVERY_ADDRESS: `${order.deliveryAddress.line1}, ${order.deliveryAddress.city}, ${order.deliveryAddress.postal_code}`,
+      DELIVERY_METHOD:
+        order.deliveryMethod === "domicile"
+          ? "Livraison à domicile"
+          : "Point relais",
+      ORDER_DATE: new Date(order.createdAt).toLocaleDateString("fr-FR"),
     },
-    subject: `Wholi - ${
-      statusSubjects[newStatus] || "Mise à jour de commande"
-    }`,
-    htmlContent: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #2563eb;">Mise à jour de votre commande</h2>
-        <p>Bonjour ${order.customerInfo.name},</p>
-        <p>${
-          statusMessages[newStatus] ||
-          `Le statut de votre commande a été mis à jour vers: ${newStatus}`
-        }</p>
-        
-        <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="margin-top: 0;">Détails de la commande</h3>
-          <p><strong>Numéro de commande:</strong> ${order.stripeSessionId}</p>
-          <p><strong>Statut:</strong> ${newStatus}</p>
-          <p><strong>Total:</strong> ${order.pricing.total}€</p>
-        </div>
-
-        ${
-          order.notes
-            ? `
-        <div style="background-color: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0;">
-          <h4 style="margin-top: 0;">Note:</h4>
-          <p>${order.notes}</p>
-        </div>
-        `
-            : ""
-        }
-
-        <p>Merci de votre confiance !</p>
-        <p>L'équipe Wholi</p>
-      </div>
-    `,
   };
 
   try {
     const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
-    console.log(`✅ Status change email sent to: ${order.customerInfo.email}`);
+    console.log(
+      `✅ Status change email (template ${templateId}) sent to: ${order.customerInfo.email}`
+    );
     return { success: true, data: response };
   } catch (error) {
     console.error("❌ Error sending status change email:", error);
@@ -89,20 +66,53 @@ const sendOrderStatusEmail = async (order, previousStatus, newStatus) => {
   }
 };
 
-// Send new order notification to admin
-const sendNewOrderNotificationToAdmin = async (order) => {
-  const productsHtml = order.products
-    .map(
-      (product) => `
-      <tr>
-        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${product.name}</td>
-        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center;">${product.quantity}</td>
-        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">${product.price}€</td>
-      </tr>
-    `
-    )
-    .join("");
+// Send order confirmed email (template 23) - called when order is created
+const sendOrderConfirmedEmail = async (order) => {
+  const sendSmtpEmail = {
+    to: [
+      {
+        email: order.customerInfo.email,
+        name: order.customerInfo.name,
+      },
+    ],
+    templateId: ORDER_TEMPLATES.confirmed,
+    params: {
+      CUSTOMER_NAME: order.customerInfo.name,
+      ORDER_ID: order.stripeSessionId,
+      ORDER_TOTAL: order.pricing.total.toFixed(2),
+      SUBTOTAL: order.pricing.subtotal.toFixed(2),
+      DELIVERY_FEE: order.pricing.deliveryFee.toFixed(2),
+      DELIVERY_ADDRESS: `${order.deliveryAddress.line1}, ${order.deliveryAddress.city}, ${order.deliveryAddress.postal_code}`,
+      DELIVERY_METHOD:
+        order.deliveryMethod === "domicile"
+          ? "Livraison à domicile"
+          : "Point relais",
+      ORDER_DATE: new Date(order.createdAt).toLocaleDateString("fr-FR"),
+    },
+  };
 
+  try {
+    const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log(
+      `✅ Order confirmed email (template 23) sent to: ${order.customerInfo.email}`
+    );
+    return { success: true, data: response };
+  } catch (error) {
+    console.error("❌ Error sending order confirmed email:", error);
+    return {
+      success: false,
+      error,
+      details: {
+        message: error.message,
+        code: error.response?.body?.code || error.code,
+        brevoMessage: error.response?.body?.message,
+      },
+    };
+  }
+};
+
+// Send new order notification to admin
+const sendNewOrderNotificationToAdmin = async () => {
   const sendSmtpEmail = {
     to: [
       {
@@ -111,7 +121,7 @@ const sendNewOrderNotificationToAdmin = async (order) => {
     ],
     sender: {
       name: "WHOLI",
-      email: "contact@codini.tn",
+      email: "mohamed.benaicha@milkdfromplants.com",
     },
     subject: `Nouvelle commande Wholi - ${order.stripeSessionId}`,
     htmlContent: `
@@ -198,115 +208,10 @@ const sendNewOrderNotificationToAdmin = async (order) => {
   }
 };
 
-// Send order confirmation email to customer
-const sendOrderConfirmationEmail = async (order) => {
-  const productsHtml = order.products
-    .map(
-      (product) => `
-      <tr>
-        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${product.name}</td>
-        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center;">${product.quantity}</td>
-        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">${product.price}€</td>
-      </tr>
-    `
-    )
-    .join("");
-
-  const sendSmtpEmail = {
-    to: [
-      {
-        email: order.customerInfo.email,
-      },
-    ],
-    sender: {
-      name: "WHOLI",
-      email: "contact@codini.tn",
-    },
-    subject: `Wholi - Confirmation de votre commande`,
-    htmlContent: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #2563eb;">Merci pour votre commande !</h2>
-        <p>Bonjour ${order.customerInfo.name},</p>
-        <p>Nous avons bien reçu votre commande et le paiement a été confirmé. Votre commande sera préparée dans les plus brefs délais.</p>
-        
-        <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="margin-top: 0;">Détails de votre commande</h3>
-          <p><strong>Numéro de commande:</strong> ${order.stripeSessionId}</p>
-          <p><strong>Date de commande:</strong> ${new Date(
-            order.createdAt
-          ).toLocaleDateString("fr-FR")}</p>
-          <p><strong>Statut:</strong> ${order.orderStatus}</p>
-        </div>
-
-        <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="margin-top: 0;">Produits commandés</h3>
-          <table style="width: 100%; border-collapse: collapse;">
-            <thead>
-              <tr style="background-color: #e5e7eb;">
-                <th style="padding: 10px; text-align: left;">Produit</th>
-                <th style="padding: 10px; text-align: center;">Quantité</th>
-                <th style="padding: 10px; text-align: right;">Prix</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${productsHtml}
-            </tbody>
-          </table>
-          
-          <div style="margin-top: 20px; text-align: right;">
-            <p><strong>Sous-total: ${order.pricing.subtotal}€</strong></p>
-            <p><strong>Frais de livraison: ${
-              order.pricing.deliveryFee
-            }€</strong></p>
-            <p style="font-size: 18px;"><strong>Total: ${
-              order.pricing.total
-            }€</strong></p>
-          </div>
-        </div>
-
-        <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="margin-top: 0;">Adresse de livraison</h3>
-          <p>${order.deliveryAddress.line1}</p>
-          <p>${order.deliveryAddress.city}, ${
-      order.deliveryAddress.postal_code
-    }</p>
-          <p>${order.deliveryAddress.country}</p>
-          <p><strong>Méthode de livraison:</strong> ${
-            order.deliveryMethod === "domicile"
-              ? "Livraison à domicile"
-              : "Point relais"
-          }</p>
-        </div>
-
-        <p>Vous recevrez un email de suivi avec les informations de livraison dès que votre commande sera expédiée.</p>
-        <p>Merci de votre confiance !</p>
-        <p>L'équipe Wholi</p>
-      </div>
-    `,
-  };
-
-  try {
-    const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
-    console.log(
-      `✅ Order confirmation email sent to: ${order.customerInfo.email}`
-    );
-    return { success: true, data: response };
-  } catch (error) {
-    console.error("❌ Error sending order confirmation email:", error);
-    return {
-      success: false,
-      error,
-      details: {
-        message: error.message,
-        code: error.response?.body?.code || error.code,
-        brevoMessage: error.response?.body?.message,
-      },
-    };
-  }
-};
-
 module.exports = {
   sendOrderStatusEmail,
+  sendOrderConfirmedEmail,
   sendNewOrderNotificationToAdmin,
-  sendOrderConfirmationEmail,
+  VALID_ORDER_STATUSES,
+  ORDER_TEMPLATES,
 };
