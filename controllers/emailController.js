@@ -13,10 +13,8 @@ const ORDER_TEMPLATES = {
   shipped: 25, // Commande en cours de livraison
 };
 
-// Valid order statuses that admin can set (in order)
 const VALID_ORDER_STATUSES = ["confirmed", "preparing", "shipped"];
 
-// Send order status email using Brevo templates
 const sendOrderStatusEmail = async (order, previousStatus, newStatus) => {
   const templateId = ORDER_TEMPLATES[newStatus];
 
@@ -111,8 +109,19 @@ const sendOrderConfirmedEmail = async (order) => {
   }
 };
 
-// Send new order notification to admin
-const sendNewOrderNotificationToAdmin = async () => {
+const sendNewOrderNotificationToAdmin = async (order) => {
+  const productsHtml = order.products
+    .map(
+      (product) => `
+      <tr>
+        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${product.name}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center;">${product.quantity}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: right;">${product.price}€</td>
+      </tr>
+    `
+    )
+    .join("");
+
   const sendSmtpEmail = {
     to: [
       {
