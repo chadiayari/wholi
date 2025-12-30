@@ -128,6 +128,8 @@ const createCheckoutSession = async (req, res) => {
         orderTotal: total.toString(),
       },
       locale: "fr",
+      // Disable adaptive pricing - only allow EUR
+      currency_conversion: null,
     });
 
     // Save payment attempt to database
